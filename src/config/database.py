@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import (
     create_engine, Column, Integer, String, DateTime, JSON
 )
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 Base = declarative_base()
 
@@ -29,8 +29,34 @@ class ImportLog(Base):
     statistics = Column(JSON)
 
 
-def init_db(db_url: str = "sqlite:///fhir_data.db"):
+def get_session_factory(db_url: str = "sqlite:///fhir_data.db"):
     """Create tables and return a session factory."""
     engine = create_engine(db_url, echo=False)
     Base.metadata.create_all(engine)
     return sessionmaker(bind=engine)
+
+# Initialize session factory on module load
+# Will be updated with proper config URL when app starts
+_session_factory = None
+
+def init_db(db_url: str = "sqlite:///fhir_data.db"):
+    """
+    Initialize database with given URL.
+    
+    Args:
+        db_url: Database URL
+        
+    Returns:
+        Session factory
+    """
+    global _session_factory
+    _session_factory = get_session_factory(db_url)
+    return _session_factory
+
+def get_db_session() -> Session:
+    """Get a new database session."""
+    global _session_factory
+    if _session_factory is None:
+        # Initialize with default if not already initialized
+        _session_factory = get_session_factory()
+    return _session_factory()

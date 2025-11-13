@@ -1,6 +1,9 @@
+"""Validation service for FHIR resources."""
+from src.config.validation_config import get_required_fields, get_valid_status
+
 def validate_resource(resource, line_number):
     """
-    Validates a single resource based on a set of rules.
+    Validates a single resource based on rules from validation_config.py.
 
     Args:
         resource: A dictionary representing the resource to validate.
@@ -10,32 +13,23 @@ def validate_resource(resource, line_number):
         A list of validation error messages.
     """
     errors = []
-    
-    # Basic validation for all resources
-    for field in ["id", "resourceType", "subject"]:
-        if field not in resource:
-            errors.append(f"Line {line_number}: Missing required field '{field}'")
-
     resource_type = resource.get("resourceType")
 
-    if resource_type == "Observation":
-        if "code" not in resource:
-            errors.append(f"Line {line_number}: Observation missing required field 'code'")
-        
-        status = resource.get("status")
-        if not status:
-            errors.append(f"Line {line_number}: Observation missing required field 'status'")
-        elif status not in ["final", "preliminary", "amended", "corrected"]:
-            errors.append(f"Line {line_number}: Invalid status '{status}' for Observation")
+    if not resource_type:
+        errors.append(f"Line {line_number}: Missing required field 'resourceType'")
+        return errors
 
-    elif resource_type == "MedicationRequest":
-        if "medicationCodeableConcept" not in resource:
-            errors.append(f"Line {line_number}: MedicationRequest missing required field 'medicationCodeableConcept'")
+    # Check for required fields
+    required_fields = get_required_fields(resource_type)
+    for field in required_fields:
+        if field not in resource:
+            errors.append(f"Line {line_number}: {resource_type} missing required field '{field}'")
 
+    # Check for valid status if applicable
+    valid_statuses = get_valid_status(resource_type)
+    if valid_statuses and "status" in resource:
         status = resource.get("status")
-        if not status:
-            errors.append(f"Line {line_number}: MedicationRequest missing required field 'status'")
-        elif status not in ["active", "completed", "cancelled", "draft"]:
-            errors.append(f"Line {line_number}: Invalid status '{status}' for MedicationRequest")
-            
+        if status not in valid_statuses:
+            errors.append(f"Line {line_number}: Invalid status '{status}' for {resource_type}")
+
     return errors

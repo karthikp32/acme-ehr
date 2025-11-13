@@ -170,8 +170,8 @@ def import_fhir_data(jsonl_content: str) -> Dict[str, Any]:
     # Prepare response
     return {
         'total_lines': total_lines,
-        'successful': successful,
-        'failed': failed,
+        'successful_imports': successful,
+        'failed_imports': failed,
         'validation_errors': validation_errors,
         'statistics': statistics,
         'warnings': all_warnings,

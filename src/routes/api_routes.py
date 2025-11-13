@@ -23,10 +23,8 @@ def get_jsonl_content():
 
     # Check if file was uploaded
     if 'file' in request.files:
-        print("File in request.files: ", request.files)
         file = request.files['file']
         if file.filename != '':
-            print(f"File uploaded: {file.filename}")
             return file.read().decode('utf-8')
     
     # Check if raw JSONL in body
@@ -66,7 +64,6 @@ def import_fhir_data_route():
     try:
         # Get JSONL content
         jsonl_content = get_jsonl_content()
-        print("JSONL content: ", jsonl_content)
         if not jsonl_content:
             return jsonify({
                 'error': 'No file or content provided. Please upload a file or provide JSONL content in the request body.'
@@ -75,7 +72,7 @@ def import_fhir_data_route():
         # Import data using service
         result = import_fhir_data(jsonl_content)
         
-        status_code = 200 if result['failed'] == 0 else 207  # 207 Multi-Status if partial success
+        status_code = 200 if result['failed_imports'] == 0 else 207  # 207 Multi-Status if partial success
         return jsonify(result), status_code
             
     except Exception as e:

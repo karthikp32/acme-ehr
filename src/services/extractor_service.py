@@ -40,7 +40,6 @@ def extract_fields_from_resource(resource):
     """
     Extract all configured fields from a FHIR resource.
     Extracts full nested structures for fields like 'code', 'subject', etc.
-    Handles nested fields like code.text, valueQuantity.value, component[0].code
     """
     if not isinstance(resource, dict):
         return {}
@@ -53,18 +52,9 @@ def extract_fields_from_resource(resource):
     fields_to_extract = get_extractable_fields(resource_type)
     
     for field in fields_to_extract:
-        # Check if field exists at top level first
         if field in resource:
-            # Extract the full nested structure of the field
-            # This will get the entire object including nested properties
             value = resource[field]
             extracted[field] = value
-        else:
-            # If field doesn't exist at top level, try nested extraction
-            # (for cases where field might be nested)
-            value = get_nested_value(resource, field)
-            if value is not None:
-                extracted[field] = value
     
     return extracted
 
@@ -84,36 +74,24 @@ def process_resource(parsed_json, line_number):
         line_number: Line number for tracking purposes
         
     Returns:
-        dict containing:
-            - extracted_fields: Extracted fields from the resource
-            - resource_type: Resource type (e.g., 'Observation', 'MedicationRequest')
-            - resource_id: Resource ID
-            - patient_id: Patient ID extracted from subject reference (if available)
-            - missing_field_warning: Warning dict if optional field is missing (None otherwise)
+        dict containing extracted data.
     """
-    # Extract fields
+    # Extract fields based on config
     extracted_fields = extract_fields_from_resource(parsed_json)
     
-    # Get resource type and ID
     resource_type = parsed_json.get('resourceType')
-    resource_id = parsed_json.get('id', f'unknown-{line_number}')
     
-    # Extract patient ID from subject reference
-    # Get subject.reference from the nested subject structure
+    # Get the full subject and code objects
+    subject_obj = extracted_fields.get('subject')
+    code_obj = extracted_fields.get('code')
+    
+    # Extract patient ID and subject reference for statistics and indexing
     patient_id = None
     subject_ref = None
-    
-    # Get subject reference from nested subject field
-    subject = extracted_fields.get('subject')
-    if isinstance(subject, dict):
-        subject_ref = subject.get('reference')
-    else:
-        # Fallback: try to get it directly using nested path from parsed_json
-        subject_ref = get_nested_value(parsed_json, 'subject.reference')
-    
-    # Extract patient ID from reference (e.g., "Patient/PT-001" -> "PT-001")
-    if subject_ref and '/' in subject_ref:
-        patient_id = subject_ref.split('/')[-1]
+    if isinstance(subject_obj, dict):
+        subject_ref = subject_obj.get('reference')
+        if subject_ref and '/' in subject_ref:
+            patient_id = subject_ref.split('/')[-1]
     
     # Check for missing optional fields and create warnings
     missing_field_warning = None
@@ -136,8 +114,9 @@ def process_resource(parsed_json, line_number):
     return {
         'extracted_fields': extracted_fields,
         'resource_type': resource_type,
-        'resource_id': resource_id,
-        'patient_id': patient_id,
+        'subject': subject_obj,
         'subject_reference': subject_ref,
+        'code': code_obj,
+        'patient_id': patient_id,
         'missing_field_warning': missing_field_warning
     }

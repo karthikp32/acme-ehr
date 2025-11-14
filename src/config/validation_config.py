@@ -14,7 +14,7 @@ VALIDATION_RULES = {
     },
     "Procedure": {
         "required": ["code", "status"],
-        "valid_status": ["completed", "in-progress", "not-done"]
+        "valid_status": ["completed", "active", "final"]
     },
     "Condition": {
         "required": ["code"]

@@ -87,9 +87,9 @@ def get_records():
     Get FHIR records with filtering and field projection.
     
     Query parameters:
-    - resourceType: Filter by resource type (e.g., "Observation", "Condition")
-    - subject: Filter by subject reference (e.g., "Patient/PT-001" or "PT-001")
-    - fields: Comma-separated list of fields to project (e.g., "id,code,status,subject")
+    - resourceType: Filter by resource type
+    - subject: Filter by subject reference
+    - fields: Comma-separated list of fields to project
     
     Returns:
     - JSON array of records
@@ -100,6 +100,8 @@ def get_records():
         subject = request.args.get('subject')
         
         # Get resources using service
+        print("Resource type: ", resource_type)
+        print("Subject: ", subject)
         resources = get_fhir_resources(resource_type=resource_type, subject=subject)
         
         # Get fields to project
@@ -111,30 +113,17 @@ def get_records():
         # Project fields and build response
         results = []
         for resource in resources:
-            resource_data = resource.raw_data if resource.raw_data else {}
+            # USE EXTRACTED_FIELDS, NOT RAW_DATA
+            resource_data = resource.extracted_fields if resource.extracted_fields else {}
             
             # Project fields if specified
             if fields_list:
                 projected_data = project_fields(resource_data, fields_list)
             else:
-                # Return full resource data if no field projection
+                # Return extracted fields if no field projection
                 projected_data = resource_data.copy() if isinstance(resource_data, dict) else {}
             
-            # Build result starting with projected data
-            result = projected_data.copy()
-            
-            # Always include database ID as db_id
-            result['db_id'] = resource.id
-            
-            # Ensure 'id' field exists - use from raw_data if available, otherwise use db_id
-            if 'id' not in result:
-                # Check if id exists in original raw_data (might not be in projected_data)
-                if isinstance(resource_data, dict) and 'id' in resource_data:
-                    result['id'] = resource_data['id']
-                else:
-                    result['id'] = resource.id
-            
-            results.append(result)
+            results.append(projected_data)
         
         return jsonify(results), 200
             
@@ -218,3 +207,52 @@ def transform_data():
 @api_bp.route('/analytics', methods=['GET'])
 def get_analytics():
     pass
+
+@api_bp.route('/debug/all_resources', methods=['GET'])
+def get_all_resources_debug():
+    """Return all resources in a plain-text table."""
+    from src.services.resource_service import get_all_resources_unfiltered
+    from flask import Response
+    import json
+    resources = get_all_resources_unfiltered()
+
+    # Prepare headers
+    headers = [
+        "id",
+        "resource_type",
+        "code",
+        "subject",
+        "imported_at",
+        "raw_data",
+        "extracted_fields"
+    ]
+
+    # Convert ORM rows to table rows
+    rows = []
+    for r in resources:
+        rows.append([
+            str(r.id),
+            r.resource_type,
+            json.dumps(r.code, indent=2) if r.code else "",
+            json.dumps(r.subject, indent=2) if r.subject else "",
+            r.imported_at.isoformat() if r.imported_at else "",
+            json.dumps(r.raw_data, indent=2),
+            json.dumps(r.extracted_fields, indent=2) if r.extracted_fields else "",
+        ])
+
+    # Compute column widths
+    col_widths = [max(len(headers[i]), max(len(row[i]) for row in rows)) for i in range(len(headers))]
+
+    # Helper to format rows
+    def fmt_row(row):
+        return "| " + " | ".join(row[i].ljust(col_widths[i]) for i in range(len(row))) + " |"
+
+    # Build table
+    separator = "+-" + "-+-".join("-" * w for w in col_widths) + "-+"
+    lines = [separator, fmt_row(headers), separator]
+    for row in rows:
+        lines.append(fmt_row(row))
+    lines.append(separator)
+
+    table_text = "\n".join(lines)
+    return Response(table_text, mimetype="text/plain")

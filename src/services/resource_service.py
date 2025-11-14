@@ -1,37 +1,6 @@
 """Service for FHIR resource database operations."""
 from typing import List, Optional, Dict, Any
 from src.config.database import get_db_session, FHIRResource, ImportLog
-from src.services.extractor_service import get_nested_value
-
-
-def save_fhir_resource(resource_type: str, subject_reference: Optional[str], 
-                       raw_data: Dict[str, Any], extracted_fields: Dict[str, Any]) -> FHIRResource:
-    """
-    Save a FHIR resource to the database.
-    
-    Args:
-        resource_type: Resource type (e.g., 'Observation', 'Condition')
-        subject_reference: Subject reference string
-        raw_data: Raw FHIR resource data
-        extracted_fields: Extracted fields from the resource
-        
-    Returns:
-        Saved FHIRResource instance
-    """
-    session = get_db_session()
-    try:
-        fhir_resource = FHIRResource(
-            resource_type=resource_type,
-            subject_reference=subject_reference,
-            raw_data=raw_data,
-            extracted_fields=extracted_fields
-        )
-        session.add(fhir_resource)
-        session.commit()
-        session.refresh(fhir_resource)
-        return fhir_resource
-    finally:
-        session.close()
 
 
 def get_fhir_resources(resource_type: Optional[str] = None, 
@@ -50,12 +19,13 @@ def get_fhir_resources(resource_type: Optional[str] = None,
     try:
         query = session.query(FHIRResource)
         
-        # Filter by resourceType
+        # Filter by resourceType (indexed)
         if resource_type:
             query = query.filter(FHIRResource.resource_type == resource_type)
         
-        # Filter by subject
+        # Filter by subject_reference (indexed)
         if subject:
+
             # Support both full reference (Patient/PT-001) and just ID (PT-001)
             if '/' in subject:
                 query = query.filter(FHIRResource.subject_reference == subject)
@@ -85,23 +55,31 @@ def get_fhir_resource_by_id(record_id: int) -> Optional[FHIRResource]:
         session.close()
 
 
+def get_all_resources_unfiltered() -> List[FHIRResource]:
+    """Return all resources without any filtering for debugging."""
+    session = get_db_session()
+    try:
+        return session.query(FHIRResource).all()
+    finally:
+        session.close()
+
+
 def save_resources_batch(resources: List[Dict[str, Any]]) -> None:
     """
     Save multiple FHIR resources in a batch.
     
     Args:
         resources: List of resource dictionaries with keys:
-            - resource_type: Resource type
-            - subject_reference: Subject reference
-            - raw_data: Raw FHIR data
-            - extracted_fields: Extracted fields
+            - resource_type, subject, subject_reference, code, raw_data, extracted_fields
     """
     session = get_db_session()
     try:
         for resource_data in resources:
             fhir_resource = FHIRResource(
                 resource_type=resource_data['resource_type'],
+                subject=resource_data.get('subject'),
                 subject_reference=resource_data.get('subject_reference'),
+                code=resource_data.get('code'),
                 raw_data=resource_data['raw_data'],
                 extracted_fields=resource_data['extracted_fields']
             )
@@ -119,16 +97,6 @@ def create_import_log(total_lines: int, successful: int, failed: int,
                      statistics: Dict[str, Any]) -> ImportLog:
     """
     Create an import log entry.
-    
-    Args:
-        total_lines: Total number of lines processed
-        successful: Number of successful imports
-        failed: Number of failed imports
-        errors: List of error dictionaries
-        statistics: Statistics dictionary
-        
-    Returns:
-        Created ImportLog instance
     """
     session = get_db_session()
     try:
@@ -145,4 +113,3 @@ def create_import_log(total_lines: int, successful: int, failed: int,
         return import_log
     finally:
         session.close()
-

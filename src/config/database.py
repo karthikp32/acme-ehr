@@ -11,8 +11,10 @@ Base = declarative_base()
 class FHIRResource(Base):
     __tablename__ = "fhir_resources"
     id = Column(Integer, primary_key=True)
-    resource_type = Column(String, nullable=False)
-    subject_reference = Column(String)
+    resource_type = Column(String, nullable=False, index=True)
+    code = Column(JSON)
+    subject = Column(JSON)
+    subject_reference = Column(String, index=True)
     raw_data = Column(JSON, nullable=False)
     extracted_fields = Column(JSON)
     imported_at = Column(DateTime, default=datetime.utcnow)

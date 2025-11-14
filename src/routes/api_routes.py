@@ -133,7 +133,7 @@ def get_records():
         }), 500
 
 
-@api_bp.route('/records/<int:record_id>', methods=['GET'])
+@api_bp.route('/records/<string:record_id>', methods=['GET'])
 def get_record(record_id):
     """
     Get a single FHIR record by ID.
@@ -173,18 +173,7 @@ def get_record(record_id):
         
         # Build response starting with projected data
         result = projected_data.copy()
-        
-        # Always include database ID as db_id
-        result['db_id'] = resource.id
-        
-        # If no field projection, include additional metadata
-        if not fields_list:
-            result['resource_type'] = resource.resource_type
-            if resource.subject_reference:
-                result['subject_reference'] = resource.subject_reference
-            if resource.imported_at:
-                result['imported_at'] = resource.imported_at.isoformat()
-        
+                
         # Ensure 'id' field exists - use from raw_data if available, otherwise use db_id
         if 'id' not in result:
             if isinstance(resource_data, dict) and 'id' in resource_data:

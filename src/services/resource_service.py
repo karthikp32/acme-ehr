@@ -76,6 +76,7 @@ def save_resources_batch(resources: List[Dict[str, Any]]) -> None:
     try:
         for resource_data in resources:
             fhir_resource = FHIRResource(
+                id = resource_data['raw_data']['id'],
                 resource_type=resource_data['resource_type'],
                 subject=resource_data.get('subject'),
                 subject_reference=resource_data.get('subject_reference'),

@@ -1,40 +1,46 @@
-"""FHIR resource model."""
 from datetime import datetime
-from src.config.database import get_db_connection
+from sqlalchemy import Column, String, JSON, DateTime
+from sqlalchemy.ext.declarative import declarative_base
 
+Base = declarative_base()
 
-class FHIRResource:
-    """Model for FHIR resources."""
+class FHIRResource(Base):
+    """SQLAlchemy model for FHIR resources."""
     
-    def __init__(self, resource_type, resource_id, resource_data, id=None, 
-                 created_at=None, updated_at=None):
-        self.id = id
-        self.resource_type = resource_type
-        self.resource_id = resource_id
-        self.resource_data = resource_data
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = updated_at or datetime.utcnow()
-    
+    __tablename__ = "fhir_resources"
+
+    id = Column(String, primary_key=True)  # FHIR resource ID
+    resource_type = Column(String, nullable=False, index=True)
+    subject_reference = Column(String, index=True)
+    code = Column(JSON)
+    subject = Column(JSON)
+    raw_data = Column(JSON, nullable=False)
+    extracted_fields = Column(JSON)
+    imported_at = Column(DateTime, default=datetime.utcnow)
+
     def to_dict(self):
         """Convert model to dictionary."""
         return {
-            'id': self.id,
-            'resource_type': self.resource_type,
-            'resource_id': self.resource_id,
-            'resource_data': self.resource_data,
-            'created_at': self.created_at.isoformat() if isinstance(self.created_at, datetime) else self.created_at,
-            'updated_at': self.updated_at.isoformat() if isinstance(self.updated_at, datetime) else self.updated_at
+            "id": self.id,
+            "resource_type": self.resource_type,
+            "subject_reference": self.subject_reference,
+            "code": self.code,
+            "subject": self.subject,
+            "raw_data": self.raw_data,
+            "extracted_fields": self.extracted_fields,
+            "imported_at": self.imported_at.isoformat() if isinstance(self.imported_at, datetime) else self.imported_at
         }
-    
+
     @staticmethod
     def from_dict(data):
-        """Create model from dictionary."""
+        """Create model instance from dictionary."""
         return FHIRResource(
-            id=data.get('id'),
-            resource_type=data.get('resource_type'),
-            resource_id=data.get('resource_id'),
-            resource_data=data.get('resource_data'),
-            created_at=data.get('created_at'),
-            updated_at=data.get('updated_at')
+            id=data.get("id"),
+            resource_type=data.get("resource_type"),
+            subject_reference=data.get("subject_reference"),
+            code=data.get("code"),
+            subject=data.get("subject"),
+            raw_data=data.get("raw_data"),
+            extracted_fields=data.get("extracted_fields"),
+            imported_at=data.get("imported_at") or datetime.utcnow()
         )
-

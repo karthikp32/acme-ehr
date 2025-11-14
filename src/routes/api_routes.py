@@ -3,6 +3,8 @@ from flask import Blueprint, request, jsonify
 from src.services.import_service import import_fhir_data, project_fields
 from src.services.resource_service import get_fhir_resources, get_fhir_resource_by_id
 from src.services.transformer_service import transform_resources
+from src.services.analytics_service import get_analytics
+
 
 
 api_bp = Blueprint('api', __name__)
@@ -221,54 +223,31 @@ def transform_data():
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/analytics', methods=['GET'])
-def get_analytics():
-    pass
-
-@api_bp.route('/debug/all_resources', methods=['GET'])
-def get_all_resources_debug():
-    """Return all resources in a plain-text table."""
-    from src.services.resource_service import get_all_resources_unfiltered
-    from flask import Response
-    import json
-    resources = get_all_resources_unfiltered()
-
-    # Prepare headers
-    headers = [
-        "id",
-        "resource_type",
-        "code",
-        "subject",
-        "imported_at",
-        "raw_data",
-        "extracted_fields"
-    ]
-
-    # Convert ORM rows to table rows
-    rows = []
-    for r in resources:
-        rows.append([
-            str(r.id),
-            r.resource_type,
-            json.dumps(r.code, indent=2) if r.code else "",
-            json.dumps(r.subject, indent=2) if r.subject else "",
-            r.imported_at.isoformat() if r.imported_at else "",
-            json.dumps(r.raw_data, indent=2),
-            json.dumps(r.extracted_fields, indent=2) if r.extracted_fields else "",
-        ])
-
-    # Compute column widths
-    col_widths = [max(len(headers[i]), max(len(row[i]) for row in rows)) for i in range(len(headers))]
-
-    # Helper to format rows
-    def fmt_row(row):
-        return "| " + " | ".join(row[i].ljust(col_widths[i]) for i in range(len(row))) + " |"
-
-    # Build table
-    separator = "+-" + "-+-".join("-" * w for w in col_widths) + "-+"
-    lines = [separator, fmt_row(headers), separator]
-    for row in rows:
-        lines.append(fmt_row(row))
-    lines.append(separator)
-
-    table_text = "\n".join(lines)
-    return Response(table_text, mimetype="text/plain")
+def get_analytics_endpoint():
+    """
+    GET /analytics
+    Get data quality metrics and statistics.
+    
+    Returns:
+    {
+        "total_records": 150,
+        "records_by_type": {"Observation": 100, "Procedure": 50},
+        "unique_subjects": 25,
+        "validation_errors": {
+            "total_validation_errors": 12,
+            "errors_by_type": {"missing_required_field": 8, "invalid_status": 4},
+            "recent_imports": 5
+        },
+        "missing_fields_top5": [
+            ["effectiveDateTime", 45],
+            ["status", 12],
+            ...
+        ]
+    }
+    """
+    try:        
+        result = get_analytics()
+        return jsonify(result), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

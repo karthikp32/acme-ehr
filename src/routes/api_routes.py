@@ -2,6 +2,8 @@
 from flask import Blueprint, request, jsonify
 from src.services.import_service import import_fhir_data, project_fields
 from src.services.resource_service import get_fhir_resources, get_fhir_resource_by_id
+from src.services.transformer_service import transform_resources
+
 
 api_bp = Blueprint('api', __name__)
 
@@ -100,8 +102,6 @@ def get_records():
         subject = request.args.get('subject')
         
         # Get resources using service
-        print("Resource type: ", resource_type)
-        print("Subject: ", subject)
         resources = get_fhir_resources(resource_type=resource_type, subject=subject)
         
         # Get fields to project
@@ -191,7 +191,34 @@ def get_record(record_id):
 # Add these new routes from transform_analytics_routes.py
 @api_bp.route('/transform', methods=['POST'])
 def transform_data():
-    pass
+    """
+    POST /transform
+    Transform data without storing it.
+    
+    Request body:
+    {
+        "resourceTypes": ["Observation"],
+        "transformations": [
+            {"action": "flatten", "field": "code.coding[0]"},
+            {"action": "extract", "field": "valueQuantity.value", "as": "value"}
+        ],
+        "filters": {"subject": "Patient/12345"}
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body required"}), 400
+        
+        result = transform_resources(
+            resource_types=data.get("resourceTypes", []),
+            transformations=data.get("transformations", []),
+            filters=data.get("filters", {})
+        )
+        return jsonify(result), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/analytics', methods=['GET'])
 def get_analytics():

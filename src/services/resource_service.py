@@ -1,6 +1,6 @@
 """Service for FHIR resource database operations."""
 from typing import List, Optional, Dict, Any
-from src.config.database import get_db_session, FHIRResource, ImportLog
+from src.models.database import get_db_session, FHIRResource, ImportLog
 
 
 def get_fhir_resources(resource_type: Optional[str] = None, 

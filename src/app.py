@@ -1,7 +1,7 @@
 """Flask application for FHIR data management."""
 from flask import Flask, jsonify
 from src.config.config import Config
-from src.config.database import init_db
+from src.models.database import init_db
 from src.routes.api_routes import api_bp
 
 

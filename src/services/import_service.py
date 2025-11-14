@@ -58,6 +58,7 @@ def import_fhir_data(jsonl_content: str) -> Dict[str, Any]:
             continue
         
         validation_errors_list = validate_resource(parsed_json, line_number)
+    
         if validation_errors_list:
             failed += 1
             validation_errors.append({'line_number': line_number, 'errors': validation_errors_list, 'type': 'validation_error'})
@@ -102,7 +103,9 @@ def import_fhir_data(jsonl_content: str) -> Dict[str, Any]:
         'unique_patient_references': list(unique_patients)[:100]
     }
     
-    all_warnings = [warning for warnings_list in missing_optional_fields.values() for warning in warnings_list]
+    # all_warnings = [warning for warnings_list in missing_optional_fields.values() for warning in warnings_list]
+    all_warnings = [error_map['errors'][0] for error_map in validation_errors if error_map['errors']]
+
     
     import_log = create_import_log(
         total_lines=total_lines,

@@ -67,16 +67,35 @@ def get_all_resources_unfiltered() -> List[FHIRResource]:
 def save_resources_batch(resources: List[Dict[str, Any]]) -> None:
     """
     Save multiple FHIR resources in a batch.
+    Skips resources with IDs that already exist in the database.
     
     Args:
         resources: List of resource dictionaries with keys:
             - resource_type, subject, subject_reference, code, raw_data, extracted_fields
     """
     session = get_db_session()
+    
     try:
+        # Get all IDs being imported
+        incoming_ids = [r['raw_data']['id'] for r in resources]
+        
+        # Bulk check which IDs already exist
+        existing_ids = set(
+            session.query(FHIRResource.id)
+            .filter(FHIRResource.id.in_(incoming_ids))
+            .all()
+        )
+        existing_ids = {id_tuple[0] for id_tuple in existing_ids}
+        
+        # Only insert new resources
         for resource_data in resources:
+            resource_id = resource_data['raw_data']['id']
+            
+            if resource_id in existing_ids:
+                continue  # Skip duplicates
+            
             fhir_resource = FHIRResource(
-                id = resource_data['raw_data']['id'],
+                id=resource_id,
                 resource_type=resource_data['resource_type'],
                 subject=resource_data.get('subject'),
                 subject_reference=resource_data.get('subject_reference'),
@@ -85,7 +104,9 @@ def save_resources_batch(resources: List[Dict[str, Any]]) -> None:
                 extracted_fields=resource_data['extracted_fields']
             )
             session.add(fhir_resource)
+        
         session.commit()
+        
     except Exception:
         session.rollback()
         raise

@@ -1,5 +1,5 @@
 """API routes for FHIR data import."""
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from src.services.import_service import import_fhir_data, project_fields
 from src.services.resource_service import get_fhir_resources, get_fhir_resource_by_id
 from src.services.transformer_service import transform_resources
@@ -94,45 +94,84 @@ def get_records():
     - resourceType: Filter by resource type
     - subject: Filter by subject reference
     - fields: Comma-separated list of fields to project
+    - format: Export format - 'json' (default), 'csv', 'txt'
     
     Returns:
-    - JSON array of records
+    - JSON array (default), CSV file, or text file
     """
     try:
-        # Get filter parameters
+        # Get parameters
         resource_type = request.args.get('resourceType')
         subject = request.args.get('subject')
-        
-        # Get resources using service
-        resources = get_fhir_resources(resource_type=resource_type, subject=subject)
-        
-        # Get fields to project
+        export_format = request.args.get('format', 'json').lower()
         fields_param = request.args.get('fields')
-        fields_list = None
-        if fields_param:
-            fields_list = [f.strip() for f in fields_param.split(',') if f.strip()]
+        fields_list = [f.strip() for f in fields_param.split(',') if f.strip()] if fields_param else None
         
-        # Project fields and build response
-        results = []
-        for resource in resources:
-            # USE EXTRACTED_FIELDS, NOT RAW_DATA
-            resource_data = resource.extracted_fields if resource.extracted_fields else {}
-            
-            # Project fields if specified
-            if fields_list:
-                projected_data = project_fields(resource_data, fields_list)
-            else:
-                # Return extracted fields if no field projection
-                projected_data = resource_data.copy() if isinstance(resource_data, dict) else {}
-            
-            results.append(projected_data)
+        # Fetch and project records
+        results = fetch_and_project_records(resource_type, subject, fields_list)
         
-        return jsonify(results), 200
+        # Return in requested format
+        if export_format == 'csv':
+            return export_as_csv(results, resource_type, subject)
+        elif export_format == 'txt':
+            return export_as_txt(results, resource_type, subject)
+        else:
+            # Default: JSON
+            return jsonify(results), 200
             
     except Exception as e:
-        return jsonify({
-            'error': f'Error processing request: {str(e)}'
-        }), 500
+        return jsonify({'error': f'Error processing request: {str(e)}'}), 500
+
+
+def fetch_and_project_records(resource_type, subject, fields_list):
+    """Fetch resources and apply field projection."""
+    resources = get_fhir_resources(resource_type=resource_type, subject=subject)
+    
+    results = []
+    for resource in resources:
+        resource_data = resource.extracted_fields if resource.extracted_fields else {}
+        projected_data = project_fields(resource_data, fields_list) if fields_list else resource_data.copy()
+        results.append(projected_data)
+    
+    return results
+
+
+def export_as_csv(results, resource_type, subject):
+    """Export results as CSV file."""
+    from src.services.export_service import records_to_csv
+    csv_content = records_to_csv(results)
+    filename = build_export_filename(resource_type, subject, 'csv')
+    
+    return Response(
+        csv_content,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
+def export_as_txt(results, resource_type, subject):
+    """Export results as plain text file."""
+    import json
+    
+    # Pretty print JSON to text
+    txt_content = json.dumps(results, indent=2)
+    filename = build_export_filename(resource_type, subject, 'txt')
+    
+    return Response(
+        txt_content,
+        mimetype='text/plain',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
+def build_export_filename(resource_type, subject, extension):
+    """Build descriptive filename for exports."""
+    filename = 'fhir_records'
+    if resource_type:
+        filename += f'_{resource_type}'
+    if subject:
+        filename += f'_{subject.split("/")[-1]}'
+    return f'{filename}.{extension}'
 
 
 @api_bp.route('/records/<string:record_id>', methods=['GET'])

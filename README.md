@@ -17,6 +17,56 @@ The API will be available at `http://localhost:5000/api/v1`
 
 ---
 
+## Running Tests
+
+A comprehensive test suite is provided to validate all API endpoints.
+```bash
+# Run the test suite
+python src/tests/test_all_endpoints.py
+```
+
+**Prerequisites:**
+- API server must be running (`make run`)
+- Test data files in `data/` directory
+
+**What it tests:**
+- ✅ Import endpoint with multiple JSONL files (valid, invalid, duplicates, edge cases)
+- ✅ Query endpoints with filters and field projection
+- ✅ Single record retrieval (including 404 handling)
+- ✅ Nested field access (dot notation and array indexing)
+- ✅ Transform endpoint with flatten/extract operations
+- ✅ Export formats (CSV, TXT)
+- ✅ Analytics endpoint
+- ✅ Duplicate detection and Last-Write-Wins behavior
+
+**Expected output:**
+```
+================================================================================
+🧪 ACME EHR API - Comprehensive Test Suite
+================================================================================
+
+Phase 1: Testing Imports
+...
+Phase 7: Testing Analytics
+...
+
+Test Summary
+================================================================================
+
+📥 Import Tests:
+  ✓ edge_cases.jsonl (3 imported, 10 failed)
+  ✓ mixed_resources.jsonl (12 imported, 0 failed)
+  ✓ minimal_valid.jsonl (5 imported, 0 failed)
+  ✓ large_batch.jsonl (16 imported, 0 failed)
+  ✓ duplicates.jsonl (5 imported, 0 failed)
+
+...
+
+✨ Test suite completed!
+```
+
+---
+
 ## Configuration
 
 The system's behavior is controlled by two configuration files in `src/config/`:

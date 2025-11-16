@@ -1,0 +1,14 @@
+
+{"resourceType": "Observation", "id": "obs-missing-status", "code": {"coding": [{"system": "http://loinc.org", "code": "8867-4"}], "text": "Heart Rate"}, "subject": {"reference": "Patient/PT-999", "display": "Test Patient"}, "effectiveDateTime": "2025-01-15T10:00:00Z"}
+{"resourceType": "Observation", "id": "obs-invalid-status", "status": "invalid-value", "code": {"coding": [{"system": "http://loinc.org", "code": "2339-0"}]}, "subject": {"reference": "Patient/PT-999"}}
+{"resourceType": "Observation", "status": "final", "code": {"coding": [{"system": "http://loinc.org", "code": "8867-4"}]}, "subject": {"reference": "Patient/PT-999"}}
+{"resourceType": "MedicationRequest", "id": "med-missing-medication", "status": "active", "subject": {"reference": "Patient/PT-999"}, "authoredOn": "2025-01-15"}
+{"resourceType": "MedicationRequest", "id": "med-invalid-status", "status": "wrong-status", "medicationCodeableConcept": {"coding": [{"code": "123"}]}, "subject": {"reference": "Patient/PT-999"}}
+{"resourceType": "Observation", "id": "obs-no-subject", "status": "final", "code": {"coding": [{"system": "http://loinc.org", "code": "8867-4"}]}}
+{"resourceType": "Procedure", "id": "proc-missing-code", "status": "completed", "subject": {"reference": "Patient/PT-999"}, "performedDateTime": "2025-01-15"}
+{"resourceType": "Condition", "id": "cond-missing-code", "subject": {"reference": "Patient/PT-999"}, "onsetDateTime": "2024-06-01"}
+{"id": "missing-resource-type", "status": "final", "subject": {"reference": "Patient/PT-999"}}
+{"resourceType": "Observation", "id": "obs-malformed-subject", "status": "final", "code": {"coding": [{"system": "http://loinc.org", "code": "8867-4"}]}, "subject": "not-a-proper-reference"}
+{"resourceType": "Observation", "id": "obs-empty-arrays", "status": "final", "code": {"coding": []}, "subject": {"reference": "Patient/PT-999"}, "component": []}
+{"resourceType": "Observation", "id": "obs-deeply-nested", "status": "final", "code": {"coding": [{"system": "http://loinc.org", "code": "8867-4"}]}, "subject": {"reference": "Patient/PT-999"}, "component": [{"code": {"coding": [{"system": "http://loinc.org", "code": "8480-6"}]}, "valueQuantity": {"value": 120, "unit": "mmHg"}}, {"code": {"coding": [{"system": "http://loinc.org", "code": "8462-4"}]}, "valueQuantity": {"value": 80, "unit": "mmHg"}}]}
+{this is not valid json at all}

@@ -1,0 +1,5 @@
+{"resourceType": "Observation", "id": "obs-minimal-001", "status": "final", "code": {"text": "Simple Test"}, "subject": {"reference": "Patient/PT-300"}}
+{"resourceType": "Observation", "id": "obs-minimal-002", "status": "preliminary", "code": {"coding": [{"code": "12345"}]}, "subject": {"reference": "Patient/PT-300"}}
+{"resourceType": "Procedure", "id": "proc-minimal-001", "status": "completed", "code": {"text": "Simple Procedure"}, "subject": {"reference": "Patient/PT-300"}}
+{"resourceType": "Condition", "id": "cond-minimal-001", "code": {"text": "Simple Condition"}, "subject": {"reference": "Patient/PT-300"}}
+{"resourceType": "MedicationRequest", "id": "med-minimal-001", "status": "active", "medicationCodeableConcept": {"text": "Simple Med"}, "subject": {"reference": "Patient/PT-300"}}

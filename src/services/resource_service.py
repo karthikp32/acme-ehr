@@ -64,35 +64,26 @@ def get_all_resources_unfiltered() -> List[FHIRResource]:
         session.close()
 
 
-def save_resources_batch(resources: List[Dict[str, Any]]) -> None:
+def save_resources_batch(resources: List[Dict[str, Any]]) -> Dict[str, int]:
+    from datetime import datetime
     """
-    Save multiple FHIR resources in a batch.
-    Skips resources with IDs that already exist in the database.
+    Save multiple FHIR resources using Last-Write-Wins.
+    Uses SQLAlchemy merge() for automatic upsert behavior.
     
     Args:
-        resources: List of resource dictionaries with keys:
-            - resource_type, subject, subject_reference, code, raw_data, extracted_fields
+        resources: List of resource dictionaries
+    
+    Returns:
+        dict: Statistics with 'inserted' and 'updated' counts
     """
     session = get_db_session()
-    
+
     try:
-        # Get all IDs being imported
+        # Get existing IDs to track inserts vs updates
         incoming_ids = [r['raw_data']['id'] for r in resources]
         
-        # Bulk check which IDs already exist
-        existing_ids = set(
-            session.query(FHIRResource.id)
-            .filter(FHIRResource.id.in_(incoming_ids))
-            .all()
-        )
-        existing_ids = {id_tuple[0] for id_tuple in existing_ids}
-        
-        # Only insert new resources
         for resource_data in resources:
             resource_id = resource_data['raw_data']['id']
-            
-            if resource_id in existing_ids:
-                continue  # Skip duplicates
             
             fhir_resource = FHIRResource(
                 id=resource_id,
@@ -101,12 +92,15 @@ def save_resources_batch(resources: List[Dict[str, Any]]) -> None:
                 subject_reference=resource_data.get('subject_reference'),
                 code=resource_data.get('code'),
                 raw_data=resource_data['raw_data'],
-                extracted_fields=resource_data['extracted_fields']
+                extracted_fields=resource_data['extracted_fields'],
+                imported_at=datetime.utcnow()
             )
-            session.add(fhir_resource)
+            
+            # merge() will INSERT if new, UPDATE if exists
+            session.merge(fhir_resource)
         
         session.commit()
-        
+                
     except Exception:
         session.rollback()
         raise

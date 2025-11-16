@@ -51,7 +51,7 @@ def import_fhir_data(jsonl_content: str) -> Dict[str, Any]:
         
         if parse_error:
             failed += 1
-            validation_errors.append({'line_number': line_number, 'error': parse_error, 'type': 'parse_error'})
+            validation_errors.append({'line_number': line_number, 'errors': [parse_error], 'type': 'parse_error'})
             continue
         
         if parsed_json is None:

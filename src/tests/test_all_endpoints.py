@@ -63,7 +63,7 @@ def test_import(filename: str) -> Dict[str, Any]:
         
         print_info(f"Status Code: {response.status_code}")
         
-        if response.status_code == 200:
+        if response.status_code in [200,207]:
             data = response.json()
             print_success(f"Import completed")
             print(f"  Total processed: {data.get('total_processed', 0)}")
@@ -167,10 +167,12 @@ def test_transform(resource_types: List[str], subject: str = None):
         
         if response.status_code == 200:
             data = response.json()
-            print_success(f"Transformed {data.get('count', 0)} records")
+            count = len(data)
             
-            if data.get('data') and len(data['data']) > 0:
-                sample = data['data'][0]
+            print_success(f"Transformed {count} records")
+            
+            if data and len(data) > 0:
+                sample = data[0]
                 print_info(f"Sample transformed fields: {list(sample.keys())}")
                 if 'code_system' in sample:
                     print_success("Flatten worked: 'code_system' present")

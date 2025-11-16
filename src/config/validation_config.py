@@ -10,7 +10,7 @@ VALIDATION_RULES = {
     },
     "MedicationRequest": {
         "required": ["medicationCodeableConcept", "status"],
-        "valid_status": ["active", "completed", "cancelled", "draft"]
+        "valid_status": ["completed", "active", "final"]
     },
     "Procedure": {
         "required": ["code", "status"],

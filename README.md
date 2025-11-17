@@ -79,11 +79,22 @@ Defines what fields are required and what values are valid for each resource typ
 ```python
 VALIDATION_RULES = {
     "all": {
-        "required": ["id", "resourceType", "subject"]  # Required for ALL resources
+        "required": ["id", "resourceType", "subject"]
     },
     "Observation": {
-        "required": ["code", "status"],  # Additional requirements for Observations
-        "valid_status": ["final", "preliminary", "amended"]  # Allowed status values
+        "required": ["code", "status"],
+        "valid_status": ["final", "preliminary", "amended", "corrected"]
+    },
+    "MedicationRequest": {
+        "required": ["medicationCodeableConcept", "status"],
+        "valid_status": ["completed", "active"]
+    },
+    "Procedure": {
+        "required": ["code", "status"],
+        "valid_status": ["completed", "in-progress"]
+    },
+    "Condition": {
+        "required": ["code"]
     }
 }
 ```
@@ -97,9 +108,21 @@ Defines which fields are extracted from raw FHIR data for fast querying.
 **Structure:**
 ```python
 EXTRACTION_CONFIG = {
-    "id": "all",  # Extract from ALL resource types
-    "status": ["Observation", "Procedure"],  # Extract only from these types
-    "effectiveDateTime": ["Observation"]  # Extract only from Observations
+    "id": "all",
+    "resourceType": "all",
+    "subject": "all",
+    "code": "all",
+    "status": ["Observation", "Procedure", "Condition", "MedicationRequest"],
+    "effectiveDateTime": ["Observation"],
+    "valueQuantity": ["Observation"],
+    "component": ["Observation"],
+    "performedDateTime": ["Procedure"],
+    "performedPeriod": ["Procedure"],
+    "onsetDateTime": ["Condition"],
+    "clinicalStatus": ["Condition"],
+    "medicationCodeableConcept": ["MedicationRequest"],
+    "dosageInstruction": ["MedicationRequest"],
+    "authoredOn": ["MedicationRequest"],
 }
 ```
 

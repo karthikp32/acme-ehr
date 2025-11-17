@@ -10,6 +10,7 @@ A lightweight Flask-based API for importing, validating, and querying FHIR-like 
 # Clone and run
 gh repo clone karthikp32/acme-ehr
 cd acme-ehr
+make setup
 make run
 ```
 
@@ -22,7 +23,7 @@ The API will be available at `http://localhost:5000/api/v1`
 A comprehensive test suite is provided to validate all API endpoints.
 ```bash
 # Run the test suite
-python src/tests/test_all_endpoints.py
+python3 src/tests/test_all_endpoints.py
 ```
 
 **Prerequisites:**
